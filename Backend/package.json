@@ -4,9 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "npx nodemon server.js",
-    "vercel-start": "node server.js"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +22,7 @@
     "mongoose": "^9.10.1",
     "morgan": "^1.12.1",
     "multer": "^2.4.0",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "^1.1.1",
     "puppeteer": "^25.11.0",
     "zod": "^4.6.5",
     "zod-to-json-schema": "^3.25.2"
