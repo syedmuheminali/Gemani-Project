@@ -1,0 +1,503 @@
+// Variables matching the app theme
+$bg-page: #0d1117;
+$bg-card: rgba(22, 27, 34, 0.85);
+$bg-panel: #1c2230;
+$border-color: rgba(42, 51, 72, 0.7);
+$text-primary: #e6edf3;
+$text-muted: #7d8590;
+$accent-pink: #ff2d78;
+$accent-purple: #8b5cf6;
+$accent-blue: #3b82f6;
+$accent-green: #3fb950;
+$font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+.interview-loader-screen {
+    width: 100%;
+    min-height: 100vh;
+    background-color: $bg-page;
+    font-family: $font-stack;
+    color: $text-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+// ── Ambient Background Glows ───────────────────────────────────────────────────
+.loader-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 0;
+
+    &--primary {
+        width: 480px;
+        height: 480px;
+        background: radial-gradient(circle, $accent-pink, transparent 70%);
+        top: 15%;
+        left: 20%;
+        animation: glowFloat 10s ease-in-out infinite alternate;
+    }
+
+    &--secondary {
+        width: 420px;
+        height: 420px;
+        background: radial-gradient(circle, $accent-purple, transparent 70%);
+        bottom: 15%;
+        right: 20%;
+        animation: glowFloat 12s ease-in-out infinite alternate-reverse;
+    }
+}
+
+// ── Main Card Container ────────────────────────────────────────────────────────
+.loader-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 600px;
+    background: $bg-card;
+    border: 1px solid $border-color;
+    border-radius: 1.25rem;
+    padding: 2.25rem 2rem;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+// ── Pulsing Animated Orb ───────────────────────────────────────────────────────
+.loader-orb-wrapper {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+}
+
+.orb-wave {
+    position: absolute;
+    border-radius: 50%;
+    border: 1.5px solid rgba($accent-pink, 0.4);
+
+    &--1 {
+        width: 100%;
+        height: 100%;
+        animation: wavePulse 2.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+    }
+
+    &--2 {
+        width: 100%;
+        height: 100%;
+        animation: wavePulse 2.4s cubic-bezier(0.25, 1, 0.5, 1) infinite 1.2s;
+    }
+}
+
+.orb-core {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $accent-pink 0%, $accent-purple 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 24px rgba($accent-pink, 0.5);
+    animation: coreRotate 8s linear infinite;
+
+    .orb-icon {
+        width: 26px;
+        height: 26px;
+        color: #ffffff;
+        animation: iconPulse 2s ease-in-out infinite alternate;
+    }
+}
+
+// ── Header & Status Badge ─────────────────────────────────────────────────────
+.loader-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.75rem;
+    width: 100%;
+}
+
+.loader-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.725rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 0.3rem 0.75rem;
+    border-radius: 2rem;
+    background-color: rgba($accent-pink, 0.12);
+    border: 1px solid rgba($accent-pink, 0.28);
+    color: lighten($accent-pink, 8%);
+
+    &__dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: $accent-pink;
+        box-shadow: 0 0 8px $accent-pink;
+        animation: blink 1.2s infinite;
+    }
+}
+
+.loader-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.loader-subtitle {
+    font-size: 0.875rem;
+    color: $text-muted;
+    margin: 0;
+    max-width: 440px;
+    line-height: 1.5;
+}
+
+// ── Progress Bar ──────────────────────────────────────────────────────────────
+.loader-progress {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 1.5rem;
+
+    &__track {
+        width: 100%;
+        height: 6px;
+        background-color: rgba(255, 255, 255, 0.07);
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    &__fill {
+        height: 100%;
+        background: linear-gradient(90deg, $accent-pink, $accent-purple, $accent-blue);
+        border-radius: 999px;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+            animation: shimmer 1.8s infinite;
+        }
+    }
+
+    &__info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: $text-muted;
+        font-weight: 500;
+    }
+}
+
+// ── Step Checklist ────────────────────────────────────────────────────────────
+.loader-steps {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    background-color: rgba(13, 17, 23, 0.5);
+    border: 1px solid rgba(42, 51, 72, 0.6);
+    border-radius: 0.85rem;
+    padding: 0.85rem 1rem;
+    box-sizing: border-box;
+}
+
+.step-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.25s, opacity 0.25s;
+
+    &__icon-container {
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    &__content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    &__label {
+        font-size: 0.865rem;
+        font-weight: 500;
+        margin: 0;
+        line-height: 1.4;
+        transition: color 0.2s;
+    }
+
+    &__detail {
+        font-size: 0.775rem;
+        color: $text-muted;
+        margin: 0;
+        line-height: 1.4;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    // Done State
+    &--done {
+        .step-row__label {
+            color: lighten($text-muted, 10%);
+        }
+    }
+
+    // Current State
+    &--current {
+        background-color: rgba($accent-pink, 0.07);
+        border: 1px solid rgba($accent-pink, 0.15);
+
+        .step-row__label {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .step-row__detail {
+            color: lighten($text-muted, 15%);
+        }
+    }
+
+    // Pending State
+    &--pending {
+        opacity: 0.45;
+
+        .step-row__label {
+            color: $text-muted;
+        }
+    }
+}
+
+// ── Step Badges ───────────────────────────────────────────────────────────────
+.step-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--done {
+        background-color: rgba($accent-green, 0.15);
+        color: $accent-green;
+        border: 1px solid rgba($accent-green, 0.35);
+
+        svg {
+            width: 12px;
+            height: 12px;
+        }
+    }
+
+    &--current {
+        background-color: rgba($accent-pink, 0.15);
+        border: 1px solid rgba($accent-pink, 0.4);
+
+        .step-spinner {
+            width: 10px;
+            height: 10px;
+            border: 2px solid transparent;
+            border-top-color: $accent-pink;
+            border-right-color: $accent-pink;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+    }
+
+    &--pending {
+        .step-circle {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+    }
+}
+
+// ── Footer ────────────────────────────────────────────────────────────────────
+.loader-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+    font-size: 0.75rem;
+    color: darken($text-muted, 5%);
+    text-align: center;
+
+    svg {
+        flex-shrink: 0;
+        stroke: $text-muted;
+    }
+}
+
+// ── Keyframe Animations ───────────────────────────────────────────────────────
+@keyframes wavePulse {
+    0% {
+        transform: scale(0.7);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(1.65);
+        opacity: 0;
+    }
+}
+
+@keyframes coreRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes iconPulse {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.85;
+    }
+    100% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.25;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes glowFloat {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        transform: translate(30px, -20px) scale(1.15);
+    }
+}
+
+// ── Mobile Responsive ─────────────────────────────────────────────────────────
+@media (max-width: 640px) {
+    .loader-card {
+        padding: 1.75rem 1.25rem;
+    }
+
+    .loader-title {
+        font-size: 1.2rem;
+    }
+
+    .loader-subtitle {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .interview-loader-screen {
+        padding: 1rem 0.65rem;
+    }
+
+    .loader-card {
+        padding: 1.5rem 1rem;
+        border-radius: 1rem;
+    }
+
+    .loader-orb-wrapper {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 1rem;
+    }
+
+    .orb-core {
+        width: 44px;
+        height: 44px;
+
+        .orb-icon {
+            width: 22px;
+            height: 22px;
+        }
+    }
+
+    .loader-title {
+        font-size: 1.15rem;
+    }
+
+    .loader-subtitle {
+        font-size: 0.775rem;
+    }
+
+    .step-row {
+        padding: 0.45rem 0.5rem;
+        gap: 0.65rem;
+
+        &__label {
+            font-size: 0.8rem;
+        }
+
+        &__detail {
+            font-size: 0.725rem;
+        }
+    }
+}
+

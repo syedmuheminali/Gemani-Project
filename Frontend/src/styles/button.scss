@@ -1,0 +1,24 @@
+button {
+    border: none;
+    outline: none;
+    padding-inline: 1.5rem;
+    padding-block: 0.75rem;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease-in-out;
+    -webkit-tap-highlight-color: transparent;
+
+    &.primary-button {
+        background-color: #ff2d78;
+        color: white;
+
+        &:hover {
+            opacity: 0.92;
+        }
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+}
