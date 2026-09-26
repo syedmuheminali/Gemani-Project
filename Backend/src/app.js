@@ -17,6 +17,11 @@ app.use(cors({
 }));
 
 // routes calling
+app.get("/", (req, res) => {
+    res.json({
+        message: "API is running successfully"
+    });
+});
 app.use("/api/auth",authRouter)
 app.use("/api/interview",interviewRouter)
 
