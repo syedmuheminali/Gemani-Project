@@ -1,9 +1,10 @@
 const mongoose = require("mongoose");
-const pdfParse = require("pdf-parse");
+// const pdfParse = require("pdf-parse");
 const { generateInterviewReport, generateResumePdf } = require("../services/ai.service");
 const interviewReportModel = require("../models/Interview.Model");
 
 async function generateInterViewReportController(req, res) {
+    const pdfParse = require("pdf-parse");
     try {
         const { selfDescription, jobDescription } = req.body;
         const userId = req.user?.id || req.user?._id;
