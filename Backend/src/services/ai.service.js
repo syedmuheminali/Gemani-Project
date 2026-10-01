@@ -100,12 +100,105 @@ Generate the interview report now.
 }
 
 
+const PDFDocument = require("pdfkit");
+
+function generatePdfWithPdfKit(htmlContent) {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({
+                margin: 40,
+                size: "A4",
+                info: {
+                    Title: "Candidate Resume",
+                    Author: "AI Resume Generator"
+                }
+            });
+
+            const buffers = [];
+            doc.on("data", chunk => buffers.push(chunk));
+            doc.on("end", () => resolve(Buffer.concat(buffers)));
+            doc.on("error", err => reject(err));
+
+            // Strip style and script tags
+            let text = (htmlContent || "").replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+            text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+
+            const decodeEntities = (str) => {
+                return (str || "")
+                    .replace(/&amp;/g, "&")
+                    .replace(/&lt;/g, "<")
+                    .replace(/&gt;/g, ">")
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&nbsp;/g, " ")
+                    .replace(/&#x2F;/g, "/")
+                    .replace(/&#x60;/g, "`")
+                    .replace(/&#x3D;/g, "=");
+            };
+
+            const tagRegex = /<(h[1-6]|p|li|div|hr)[^>]*>([\s\S]*?)<\/\1>|<hr\s*\/?>/gi;
+            let match;
+            let foundTags = false;
+
+            while ((match = tagRegex.exec(text)) !== null) {
+                const tag = (match[1] || "hr").toLowerCase();
+                let inner = (match[2] || "").replace(/<[^>]+>/g, "").trim();
+                inner = decodeEntities(inner);
+
+                if (!inner && tag !== "hr") continue;
+                foundTags = true;
+
+                if (tag === "h1") {
+                    doc.moveDown(0.2);
+                    doc.fontSize(20).font("Helvetica-Bold").fillColor("#111827").text(inner, { align: "center" });
+                    doc.moveDown(0.2);
+                } else if (tag === "h2") {
+                    doc.moveDown(0.5);
+                    doc.fontSize(12).font("Helvetica-Bold").fillColor("#1f2937").text(inner.toUpperCase());
+                    doc.strokeColor("#d1d5db").lineWidth(1).moveTo(doc.x, doc.y).lineTo(doc.page.width - 40, doc.y).stroke();
+                    doc.moveDown(0.3);
+                } else if (tag === "h3") {
+                    doc.moveDown(0.3);
+                    doc.fontSize(11).font("Helvetica-Bold").fillColor("#374151").text(inner);
+                    doc.moveDown(0.15);
+                } else if (tag === "li") {
+                    doc.fontSize(9.5).font("Helvetica").fillColor("#4b5563").text(`•   ${inner}`, { indent: 12 });
+                    doc.moveDown(0.12);
+                } else if (tag === "hr") {
+                    doc.strokeColor("#e5e7eb").lineWidth(1).moveTo(doc.x, doc.y).lineTo(doc.page.width - 40, doc.y).stroke();
+                    doc.moveDown(0.3);
+                } else {
+                    if (inner.includes("@") || inner.includes("|") || inner.includes("•")) {
+                        doc.fontSize(9.5).font("Helvetica").fillColor("#6b7280").text(inner, { align: "center" });
+                        doc.moveDown(0.2);
+                    } else {
+                        doc.fontSize(9.5).font("Helvetica").fillColor("#374151").text(inner);
+                        doc.moveDown(0.2);
+                    }
+                }
+            }
+
+            if (!foundTags) {
+                const plainLines = decodeEntities(text.replace(/<[^>]+>/g, "\n")).split("\n").filter(l => l.trim().length > 0);
+                for (const line of plainLines) {
+                    doc.fontSize(10).font("Helvetica").fillColor("#374151").text(line.trim());
+                    doc.moveDown(0.2);
+                }
+            }
+
+            doc.end();
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
 async function generatePdfFromHtml(htmlContent) {
-    let browser;
+    let browser = null;
     const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === "production");
 
-    if (isServerless) {
-        try {
+    try {
+        if (isServerless) {
             const chromiumModule = require("@sparticuz/chromium");
             const chromium = chromiumModule.default || chromiumModule;
             const puppeteerCore = require("puppeteer-core");
@@ -117,28 +210,18 @@ async function generatePdfFromHtml(htmlContent) {
                 executablePath: execPath,
                 headless: chromium.headless ?? true,
             });
-        } catch (serverlessError) {
-            console.error("Failed to launch serverless Chromium, falling back to standard Puppeteer:", serverlessError);
+        } else {
             const puppeteer = require("puppeteer");
             browser = await puppeteer.launch({
                 headless: true,
-                args: ["--no-sandbox", "--disable-setuid-sandbox"]
+                args: [
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox"
+                ]
             });
         }
-    } else {
-        const puppeteer = require("puppeteer");
-        browser = await puppeteer.launch({
-            headless: true,
-            args: [
-                "--no-sandbox",
-                "--disable-setuid-sandbox"
-            ]
-        });
-    }
 
-    try {
         const page = await browser.newPage();
-
         await page.setContent(htmlContent, {
             waitUntil: ["load", "domcontentloaded"]
         });
@@ -155,9 +238,16 @@ async function generatePdfFromHtml(htmlContent) {
         });
 
         return pdfBuffer;
+    } catch (browserError) {
+        console.warn("Headless browser generation unavailable in this environment, using native PDFKit generator fallback:", browserError.message);
+        return await generatePdfWithPdfKit(htmlContent);
     } finally {
         if (browser) {
-            await browser.close();
+            try {
+                await browser.close();
+            } catch (closeErr) {
+                console.error("Error closing browser:", closeErr);
+            }
         }
     }
 }

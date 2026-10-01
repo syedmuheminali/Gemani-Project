@@ -62,6 +62,18 @@ export const useInterview = () => {
         setLoading(true)
         try {
             const response = await generateResumePdf({ interviewReportId })
+
+            if (response && response.type === "application/json") {
+                const text = await response.text()
+                try {
+                    const json = JSON.parse(text)
+                    alert(json.message || "Failed to download resume PDF.")
+                } catch {
+                    alert("Failed to download resume PDF.")
+                }
+                return
+            }
+
             const url = window.URL.createObjectURL(new Blob([ response ], { type: "application/pdf" }))
             const link = document.createElement("a")
             link.href = url
@@ -73,6 +85,7 @@ export const useInterview = () => {
         }
         catch (error) {
             console.error("Error downloading resume pdf:", error)
+            alert("Error downloading resume. Please try again.")
         } finally {
             setLoading(false)
         }
