@@ -100,43 +100,66 @@ Generate the interview report now.
 
 
 async function generatePdfFromHtml(htmlContent) {
+    console.log("PDF: Starting...");
+
     const { default: chromium } = await import("@sparticuz/chromium");
-    const puppeteer = require("puppeteer-core");
+    const { default: puppeteer } = await import("puppeteer-core");
 
-    console.log("Starting Chromium...");
-
-    const executablePath = await chromium.executablePath();
-
-    console.log("Chromium path:", executablePath);
-
-    const browser = await puppeteer.launch({
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath,
-        headless: "shell",
-    });
+    console.log("PDF: Packages loaded");
 
     try {
-        const page = await browser.newPage();
+        chromium.setGraphicsMode = false;
 
-        await page.setContent(htmlContent, {
-            waitUntil: "networkidle0",
+        const executablePath = await chromium.executablePath();
+
+        console.log("PDF: Chromium path:", executablePath);
+
+        const browser = await puppeteer.launch({
+            args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
+            executablePath: executablePath,
+            headless: "shell",
         });
 
-        const pdfBuffer = await page.pdf({
-            format: "A4",
-            printBackground: true,
-            margin: {
-                top: "20mm",
-                bottom: "20mm",
-                left: "15mm",
-                right: "15mm",
-            },
-        });
+        console.log("PDF: Browser launched");
 
-        return pdfBuffer;
-    } finally {
-        await browser.close();
+        try {
+            const page = await browser.newPage();
+
+            console.log("PDF: Page created");
+
+            await page.setContent(htmlContent, {
+                waitUntil: "networkidle0",
+            });
+
+            console.log("PDF: HTML loaded");
+
+            const pdfBuffer = await page.pdf({
+                format: "A4",
+                printBackground: true,
+                margin: {
+                    top: "20mm",
+                    bottom: "20mm",
+                    left: "15mm",
+                    right: "15mm",
+                },
+            });
+
+            console.log(
+                "PDF: Generated successfully. Size:",
+                pdfBuffer.length
+            );
+
+            return pdfBuffer;
+
+        } finally {
+            await browser.close();
+            console.log("PDF: Browser closed");
+        }
+
+    } catch (error) {
+        console.error("PDF generation failed:", error);
+        throw error;
     }
 }
 
