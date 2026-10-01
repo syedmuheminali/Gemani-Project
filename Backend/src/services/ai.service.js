@@ -101,21 +101,46 @@ Generate the interview report now.
 
 
 async function generatePdfFromHtml(htmlContent) {
-        const puppeteer = await import("puppeteer");
-    const browser = await puppeteer.launch({
-        // executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        headless: true,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox"
-        ]
-    });
+    let browser;
+    const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === "production");
+
+    if (isServerless) {
+        try {
+            const chromiumModule = require("@sparticuz/chromium");
+            const chromium = chromiumModule.default || chromiumModule;
+            const puppeteerCore = require("puppeteer-core");
+            const execPath = await chromium.executablePath();
+
+            browser = await puppeteerCore.launch({
+                args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
+                defaultViewport: chromium.defaultViewport,
+                executablePath: execPath,
+                headless: chromium.headless ?? true,
+            });
+        } catch (serverlessError) {
+            console.error("Failed to launch serverless Chromium, falling back to standard Puppeteer:", serverlessError);
+            const puppeteer = require("puppeteer");
+            browser = await puppeteer.launch({
+                headless: true,
+                args: ["--no-sandbox", "--disable-setuid-sandbox"]
+            });
+        }
+    } else {
+        const puppeteer = require("puppeteer");
+        browser = await puppeteer.launch({
+            headless: true,
+            args: [
+                "--no-sandbox",
+                "--disable-setuid-sandbox"
+            ]
+        });
+    }
 
     try {
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, {
-            waitUntil: "networkidle0"
+            waitUntil: ["load", "domcontentloaded"]
         });
 
         const pdfBuffer = await page.pdf({
@@ -131,7 +156,9 @@ async function generatePdfFromHtml(htmlContent) {
 
         return pdfBuffer;
     } finally {
-        await browser.close();
+        if (browser) {
+            await browser.close();
+        }
     }
 }
 
