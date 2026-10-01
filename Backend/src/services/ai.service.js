@@ -101,7 +101,7 @@ Generate the interview report now.
 
 
 async function generatePdfFromHtml(htmlContent) {
-     const puppeteer = require("puppeteer");
+    const { default: puppeteer } = await import("puppeteer");
     const browser = await puppeteer.launch({
         executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         headless: true,
