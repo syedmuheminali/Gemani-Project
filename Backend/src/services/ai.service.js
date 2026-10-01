@@ -100,14 +100,20 @@ Generate the interview report now.
 
 
 async function generatePdfFromHtml(htmlContent) {
-    const chromium = require("@sparticuz/chromium");
+    const { default: chromium } = await import("@sparticuz/chromium");
     const puppeteer = require("puppeteer-core");
+
+    console.log("Starting Chromium...");
+
+    const executablePath = await chromium.executablePath();
+
+    console.log("Chromium path:", executablePath);
 
     const browser = await puppeteer.launch({
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
-        headless: true,
+        executablePath,
+        headless: "shell",
     });
 
     try {
