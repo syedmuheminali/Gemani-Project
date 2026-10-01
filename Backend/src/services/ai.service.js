@@ -3,9 +3,82 @@ const {z} = require("zod");
 const { zodToJsonSchema } = require("zod-to-json-schema")
 // const puppeteer = require("puppeteer")
 
+const googleAiApiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
 const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENAI_API_KEY
+    apiKey: googleAiApiKey
 });
+
+function parseJsonModelResponse(rawText) {
+  if (!rawText || typeof rawText !== "string") {
+    throw new Error("Empty response received from the model.")
+  }
+
+  const trimmed = rawText.trim();
+  const withoutCodeFence = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+
+  try {
+    return JSON.parse(withoutCodeFence);
+  } catch (error) {
+    throw new Error(`Failed to parse model JSON response: ${error.message}`);
+  }
+}
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function buildFallbackResumeHtml({ resume, selfDescription, jobDescription }) {
+  const resumeSections = [
+    { title: "Professional Summary", content: selfDescription || "Experienced professional with strong technical and communication skills." },
+    { title: "Core Experience", content: resume || "Relevant professional experience and achievements." },
+    { title: "Target Role", content: jobDescription || "Role requirements and responsibilities the candidate is targeting." },
+  ];
+
+  const sections = resumeSections
+    .map(({ title, content }) => {
+      const bulletPoints = String(content)
+        .split(/\n|\r\n|\.|;\s*(?=[A-Z])|\s{2,}/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .slice(0, 8)
+        .map((line) => `<li>${escapeHtml(line)}</li>`)
+        .join("");
+
+      return `
+        <div>
+          <h2>${escapeHtml(title)}</h2>
+          <ul>${bulletPoints || `<li>${escapeHtml(content || "Details not available.")}</li>`}</ul>
+        </div>
+      `;
+    })
+    .join("");
+
+  return `
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; color: #111827; margin: 0; padding: 28px; background: #ffffff; }
+          h1 { font-size: 28px; margin: 0 0 8px; }
+          h2 { font-size: 16px; color: #1f2937; border-bottom: 2px solid #dbeafe; padding-bottom: 6px; margin-top: 22px; }
+          ul { margin: 10px 0 0 18px; padding: 0; line-height: 1.7; }
+          li { margin-bottom: 6px; }
+          .meta { color: #4b5563; font-size: 12px; margin-bottom: 18px; }
+        </style>
+      </head>
+      <body>
+        <h1>Professional Resume</h1>
+        <div class="meta">Tailored for the target role</div>
+        ${sections}
+      </body>
+    </html>
+  `;
+}
 
 
 const interviewReportSchema = z.object({
@@ -76,6 +149,10 @@ Generate the interview report now.
 `;
 
   try {
+    if (!googleAiApiKey) {
+      throw new Error("Google AI API key is not configured. Set GOOGLE_GENAI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY in your environment.");
+    }
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
 
@@ -88,13 +165,14 @@ Generate the interview report now.
       },
     });
 
-    return JSON.parse(response.text);
+    return parseJsonModelResponse(response?.text);
   } catch (error) {
     if (error?.issues) {
       console.error("Zod Validation Errors:");
       console.error(error.issues);
     }
 
+    console.error("Failed to generate interview report:", error?.message || error);
     throw new Error("Failed to generate interview report");
   }
 }
@@ -271,21 +349,32 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
                     `
 
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(resumePdfSchema),
+    let htmlContent = buildFallbackResumeHtml({ resume, selfDescription, jobDescription });
+
+    try {
+        if (!googleAiApiKey) {
+            throw new Error("Google AI API key is not configured. Set GOOGLE_GENAI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY in your environment.");
         }
-    })
 
+        const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: zodToJsonSchema(resumePdfSchema),
+            }
+        })
 
-    const jsonContent = JSON.parse(response.text)
+        const jsonContent = parseJsonModelResponse(response?.text);
 
-    const pdfBuffer = await generatePdfFromHtml(jsonContent.html)
+        if (typeof jsonContent?.html === "string" && jsonContent.html.trim()) {
+            htmlContent = jsonContent.html;
+        }
+    } catch (error) {
+        console.warn("Falling back to the built-in resume template because the model failed to generate resume HTML:", error?.message || error);
+    }
 
-    return pdfBuffer
+    return await generatePdfFromHtml(htmlContent)
 
 }
 
