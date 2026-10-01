@@ -1,7 +1,7 @@
 const {GoogleGenAI} = require("@google/genai");
 const {z} = require("zod");
 const { zodToJsonSchema } = require("zod-to-json-schema")
-const puppeteer = require("puppeteer")
+// const puppeteer = require("puppeteer")
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENAI_API_KEY
@@ -101,8 +101,9 @@ Generate the interview report now.
 
 
 async function generatePdfFromHtml(htmlContent) {
+        const puppeteer = await import("puppeteer");
     const browser = await puppeteer.launch({
-        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        // executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         headless: true,
         args: [
             "--no-sandbox",
