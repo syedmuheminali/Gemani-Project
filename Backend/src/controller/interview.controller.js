@@ -1,18 +1,37 @@
+require("../config/polyfills");
 const mongoose = require("mongoose");
-// const pdfParse = require("pdf-parse");
 const { generateInterviewReport, generateResumePdf } = require("../services/ai.service");
 const interviewReportModel = require("../models/Interview.Model");
 
 async function generateInterViewReportController(req, res) {
-    const pdfParse = require("pdf-parse");
     try {
         const { selfDescription, jobDescription } = req.body;
         const userId = req.user?.id || req.user?._id;
 
         let resumeText = "";
         if (req.file && req.file.buffer) {
-            const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText();
-            resumeText = resumeContent.text;
+            try {
+                const pdfParseModule = require("pdf-parse");
+                if (pdfParseModule.PDFParse) {
+                    const parser = new pdfParseModule.PDFParse(Uint8Array.from(req.file.buffer));
+                    const resumeContent = await parser.getText();
+                    resumeText = resumeContent?.text || "";
+                } else if (typeof pdfParseModule === "function") {
+                    const resumeContent = await pdfParseModule(req.file.buffer);
+                    resumeText = resumeContent?.text || "";
+                }
+            } catch (pdfError) {
+                console.error("Error extracting text from PDF resume:", pdfError);
+                try {
+                    const pdfParseModule = require("pdf-parse");
+                    if (typeof pdfParseModule === "function") {
+                        const fallbackContent = await pdfParseModule(req.file.buffer);
+                        resumeText = fallbackContent?.text || "";
+                    }
+                } catch (fallbackError) {
+                    console.error("Fallback PDF parse also failed:", fallbackError);
+                }
+            }
         }
 
         const interViewReportByAi = await generateInterviewReport({
